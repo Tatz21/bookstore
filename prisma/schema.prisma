@@ -1,0 +1,253 @@
+// Local dev datasource uses SQLite so the app runs immediately without Docker/Postgres.
+// For PostgreSQL (Neon / Supabase), change provider to "postgresql" and set DATABASE_URL in .env.
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  CUSTOMER
+  ADMIN
+}
+
+enum BookFormat {
+  PAPERBACK
+  HARDCOVER
+  EBOOK
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  CONFIRMED
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+enum DiscountType {
+  PERCENT
+  FIXED
+}
+
+model User {
+  id           String         @id @default(cuid())
+  name         String?
+  email        String         @unique
+  emailVerified DateTime?
+  passwordHash String?
+  image        String?
+  role         Role           @default(CUSTOMER)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  accounts  Account[]
+  sessions  Session[]
+  addresses Address[]
+  cartItems CartItem[]
+  wishlist  WishlistItem[]
+  reviews   Review[]
+  orders    Order[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Category {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  slug        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+
+  books Book[]
+}
+
+model Book {
+  id            String     @id @default(cuid())
+  title         String
+  slug          String     @unique
+  author        String
+  authorBio     String?
+  isbn10        String?    @unique
+  isbn13        String?    @unique
+  description   String
+  price         Float
+  discountPrice Float?
+  stockQuantity Int        @default(0)
+  weightGrams   Int        @default(350)
+  coverImageUrl String
+  galleryUrls   String     @default("[]")
+  format        BookFormat @default(PAPERBACK)
+  language      String     @default("English")
+  pages         Int?
+  publisher     String?
+  publishedDate String?
+  categoryId    String
+  isFeatured    Boolean    @default(false)
+  isActive      Boolean    @default(true)
+  ratingAvg     Float      @default(0)
+  reviewCount   Int        @default(0)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  category   Category       @relation(fields: [categoryId], references: [id])
+  reviews    Review[]
+  cartItems  CartItem[]
+  wishlist   WishlistItem[]
+  orderItems OrderItem[]
+
+  @@index([title])
+  @@index([author])
+  @@index([categoryId])
+  @@index([isFeatured, isActive])
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  bookId    String
+  userId    String
+  rating    Int
+  comment   String
+  createdAt DateTime @default(now())
+
+  book Book @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([bookId, userId])
+  @@index([bookId])
+}
+
+model WishlistItem {
+  id        String   @id @default(cuid())
+  userId    String
+  bookId    String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  book Book @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, bookId])
+}
+
+model CartItem {
+  id        String   @id @default(cuid())
+  userId    String
+  bookId    String
+  quantity  Int      @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  book Book @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, bookId])
+}
+
+model Address {
+  id         String   @id @default(cuid())
+  userId     String
+  fullName   String
+  phone      String
+  line1      String
+  line2      String?
+  city       String
+  state      String
+  postalCode String
+  country    String   @default("India")
+  isDefault  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Coupon {
+  id             String       @id @default(cuid())
+  code           String       @unique
+  discountType   DiscountType @default(PERCENT)
+  discountValue  Float
+  minOrderAmount Float        @default(0)
+  maxUses        Int?
+  usedCount      Int          @default(0)
+  expiresAt      DateTime?
+  isActive       Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+}
+
+model Order {
+  id              String      @id @default(cuid())
+  orderNumber     String      @unique
+  userId          String?
+  guestEmail      String?
+  subtotal        Float
+  discountAmount  Float       @default(0)
+  shippingAmount  Float       @default(0)
+  totalAmount     Float
+  couponCode      String?
+  status          OrderStatus @default(PENDING)
+  paymentProvider String      @default("mock")
+  paymentIntentId String?
+  paymentId       String?
+  shippingAddress String
+  trackingNumber  String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  user  User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  items OrderItem[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model OrderItem {
+  id              String @id @default(cuid())
+  orderId         String
+  bookId          String
+  quantity        Int
+  priceAtPurchase Float
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  book  Book  @relation(fields: [bookId], references: [id])
+
+  @@index([orderId])
+  @@index([bookId])
+}

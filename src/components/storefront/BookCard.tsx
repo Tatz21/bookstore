@@ -7,8 +7,10 @@ import { formatPrice } from "@/lib/utils";
 import { getEffectiveUnitPrice } from "@/lib/commerce";
 import { useCart, type CartBook } from "@/components/providers/CartProvider";
 import { Badge } from "@/components/ui/badge";
+import { BookOpeningCover } from "./BookOpeningCover";
 
 export interface BookCardData extends CartBook {
+  description?: string;
   ratingAvg: number;
   reviewCount: number;
   category?: { name: string; slug: string } | null;
@@ -18,7 +20,6 @@ export function BookCard({ book }: { book: BookCardData }) {
   const { addItem } = useCart();
   const [adding, setAdding] = useState(false);
   const [added, setAdded] = useState(false);
-  const [imgError, setImgError] = useState(false);
 
   const effectivePrice = getEffectiveUnitPrice(book);
   const hasDiscount =
@@ -51,29 +52,17 @@ export function BookCard({ book }: { book: BookCardData }) {
 
       <Link
         href={`/books/${book.slug}`}
-        className="relative aspect-[3/4] w-full overflow-hidden bg-[var(--surface-subtle)]"
+        className="relative aspect-[3/4] w-full overflow-hidden bg-[var(--surface-subtle)]/60"
       >
-        {!imgError ? (
-          <img
-            src={book.coverImageUrl}
-            alt={book.title}
-            onError={() => setImgError(true)}
-            className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.06]"
-          />
-        ) : (
-          <div className="flex h-full w-full flex-col items-center justify-center bg-[var(--surface-subtle)] p-4 text-center">
-            <span className="font-editorial text-lg font-semibold text-[var(--text-primary)]">
-              {book.title}
-            </span>
-            <span className="mt-1 text-xs text-[var(--text-muted)]">
-              {book.author}
-            </span>
-          </div>
-        )}
+        <BookOpeningCover
+          title={book.title}
+          author={book.author}
+          coverImageUrl={book.coverImageUrl}
+          excerpt={book.description}
+          format={book.format}
+        />
 
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-
-        <div className="absolute left-3 top-3 flex flex-wrap gap-1.5">
+        <div className="pointer-events-none absolute left-3 top-3 z-20 flex flex-wrap gap-1.5">
           <Badge
             variant="default"
             className="bg-black/65 text-white border-white/15 backdrop-blur-md"
@@ -88,7 +77,7 @@ export function BookCard({ book }: { book: BookCardData }) {
         </div>
 
         {outOfStock && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-xs">
+          <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/60 backdrop-blur-xs">
             <span className="rounded-full border border-white/20 bg-black/75 px-3.5 py-1 text-xs font-semibold text-white">
               Out of Stock
             </span>

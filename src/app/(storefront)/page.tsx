@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { BookCard } from "@/components/storefront/BookCard";
+import { BookOpeningCover } from "@/components/storefront/BookOpeningCover";
 import { Button } from "@/components/ui/button";
 import {
   HeroEntrance,
@@ -111,11 +112,13 @@ export default async function HomePage() {
                       {spotlight.format}
                     </span>
                   </div>
-                  <div className="mt-3 aspect-[4/5] w-full overflow-hidden rounded-2xl bg-[var(--surface-subtle)] shadow-lg">
-                    <img
-                      src={spotlight.coverImageUrl}
-                      alt={spotlight.title}
-                      className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                  <div className="mt-3 aspect-[4/5] w-full overflow-hidden rounded-2xl bg-[var(--surface-subtle)]/60">
+                    <BookOpeningCover
+                      title={spotlight.title}
+                      author={spotlight.author}
+                      coverImageUrl={spotlight.coverImageUrl}
+                      excerpt={spotlight.description}
+                      format={spotlight.format}
                     />
                   </div>
                   <div className="mt-4 flex items-end justify-between gap-3">

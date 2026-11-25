@@ -5,6 +5,7 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { prisma } from "./prisma";
 import { authConfig } from "./auth.config";
+import { shouldUseDemoStore } from "./demo-store";
 import type { UserRole } from "./validators";
 
 const credentialsSchema = z.object({
@@ -14,7 +15,10 @@ const credentialsSchema = z.object({
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
-  adapter: PrismaAdapter(prisma),
+  adapter:
+    process.env.GOOGLE_CLIENT_ID && !shouldUseDemoStore()
+      ? PrismaAdapter(prisma)
+      : undefined,
   providers: [
     ...authConfig.providers,
     Credentials({
